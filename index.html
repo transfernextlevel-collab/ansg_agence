@@ -32,6 +32,7 @@
 ║  ✅ Récupération mot de passe par email (si l'action existe côté Apps Script)║
 ║  ✅ Multilingue PT / EN / FR / ES                                            ║
 ║  ✅ Sessions persistantes (sessionStorage)                                   ║
+║  ✅ Alertes navigateur + actualização periódica (novas reservas atribuídas)     ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 -->
 
@@ -329,8 +330,11 @@ td.mono{font-family:monospace;font-size:12px;color:var(--navy3);font-weight:600}
 .toast.success{border-left-color:var(--success)}.toast.error{border-left-color:var(--danger)}.toast.wa{border-left-color:var(--whatsapp)}.toast.hotel-wa{border-left-color:var(--hotel-wa)}.toast.notif{border-left-color:#7C3AED}
 
 /* Info bar session */
-.session-bar{background:linear-gradient(90deg,rgba(201,168,76,.08),rgba(201,168,76,.04));border-bottom:1px solid var(--gold-b);padding:6px 24px;font-size:11px;color:var(--ts);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.session-bar{background:linear-gradient(90deg,rgba(201,168,76,.08),rgba(201,168,76,.04));border-bottom:1px solid var(--gold-b);padding:6px 24px;font-size:11px;color:var(--ts);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
 .session-bar strong{color:var(--navy);font-weight:600}
+.notif-lbl{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;color:var(--ts);user-select:none;margin:0}
+.notif-lbl input{accent-color:var(--navy3);width:15px;height:15px;margin:0;flex-shrink:0}
+html[data-theme="dark"] .notif-lbl{color:var(--ts)}
 
 /* Thème clair (défaut) / foncé — ☀️ 🌙 */
 .theme-corner-login{position:absolute;top:16px;left:16px;z-index:12}
@@ -749,11 +753,6 @@ html[data-theme="dark"] .header .lang-app .lp.active{
   .hdr-acts .btn{font-size:18px}
 }
 </style>
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-192.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="NLPH Parceiro">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head>
 <body>
 
@@ -894,6 +893,10 @@ html[data-theme="dark"] .header .lang-app .lp.active{
   <!-- Session bar -->
   <div class="session-bar" id="session-bar">
     <span>✅ Sessão ativa · <strong id="sb-agency">—</strong></span>
+    <label class="notif-lbl">
+      <input type="checkbox" id="notif-enable" autocomplete="off" onchange="onNotifToggleChange()">
+      <span id="lbl-notif-toggle">Alertas de novas reservas</span>
+    </label>
     <span id="sb-time" style="font-size:10px;opacity:.7"></span>
   </div>
 
@@ -1083,6 +1086,16 @@ const UI = {
   FR:{loginTitle:'🔐 Portail Agences',agId:'Identifiant',agPass:'Mot de passe',loginBtn:'Se connecter',resetLink:'Changer / Récupérer le mot de passe',r1Title:'🔑 Récupérer le Mot de Passe',r1Sub:'Saisissez votre identifiant et email enregistré',r1Id:'Identifiant',r1Email:'Email enregistré sur le compte',r1Btn:'Envoyer le Code',back1:'Retour au login',r2Title:'📧 Vérifier le Code',r2Sub:'Code envoyé à votre email',r2Code:'Code de vérification (6 chiffres)',r2New:'Nouveau mot de passe (min. 8 car.)',r2Cf:'Confirmer le nouveau mot de passe',r2Btn:'Changer le Mot de Passe',r2Hint:'Le code est valide pendant 15 minutes',back2:'Demander un nouveau code',errEmpty:'Veuillez remplir tous les champs.',errConn:'Erreur de connexion.',errPwMatch:'Les mots de passe ne correspondent pas.',errPwShort:'Minimum 8 caractères.',okPwChanged:'✅ Mot de passe changé avec succès !',sTotal:'Total',sPend:'En attente',sConf:'Confirmées',sUpcoming:'À réaliser',cardTtl:'Réservations Attribuées',expExcel:'Excel',expPdf:'PDF',refreshTxt:'Actualiser',fStatut:'Statut',fAll:'Tous',fPend:'⏳ En attente',fConf:'✅ Confirmée',fCanc:'❌ Annulée',fReal:'🏁 Réalisée',fDs:'Date début',fDe:'Date fin',fDest:'Destination',fDestAll:'Tous',btnFilter:'Filtrer',btnReset:'Effacer',loading:'Chargement…',logout:'⎋ Déconnexion',modalTtl:'Détails de la Réservation',modalActions:'⚡ Actions',mPrix:'Prix (€)',mComment:'Commentaire (optionnel)',btnClose:'Fermer',btnCancel:'Annuler',btnConfirm:'Confirmer',btnPrice:'Modifier le Prix',waTtl:'Confirmation WhatsApp → Client',waPhone:'WhatsApp client',waBtn:'Ouvrir WhatsApp → Client',hotelWaTtl:"Confirmer à Next Level — via WhatsApp",hotelWaDesc:"Envoyez ce message à l'hôtel pour confirmer que votre agence accepte ce transfert.",hotelWaBtn:'Confirmer à l\'Hôtel via WhatsApp',copyMsg:'Copier le Message',calTtl:'Ajouter au Calendrier',colRef:'Réf.',colClient:'Client',colDate:'Date',colHour:'Heure',colRoute:'Trajet',colPax:'Pax',colPrice:'Prix',colStatus:'Statut',colActs:'Actions',emptyTitle:'Aucune réservation trouvée',emptySub:"Essayez d'ajuster les filtres.",toastConf:'✅ Confirmée avec succès',toastCanc:'❌ Annulée',toastExcel:'📊 Excel exporté',toastPdf:'🖨️ PDF imprimé',toastWa:'💬 WhatsApp ouvert !',toastHotelWa:"🏨 Message de confirmation hôtel ouvert !",toastPrice:'💶 Prix mis à jour',toastCopy:'📋 Message copié !',confirmCancel:'Annuler cette réservation',msgConf:'✅ Réservation confirmée !',msgCanc:'❌ Réservation annulée.',msgPrice:'💶 Prix mis à jour !',pageOf:'sur',lblClient:'Client',lblEmail:'Email',lblPhone:'Téléphone',lblOta:'Réf. OTA',lblDate:'Date / Heure',lblPaxMalas:'Pax / Bagages',lblOrigin:'Départ',lblAddrDep:'Adresse départ',lblDest:'Destination',lblAddrDest:'Adresse destination',lblFlight:'N° Vol',lblTransport:'N° Transport',lblRoom:'Chambre',lblPrice:'Prix',lblStatus:'Statut',lblComments:'Commentaires',tabAll:'Toutes les Réservations',tabUpcoming:'Prochains Transferts',upcomingTitle:'Prochains Transferts',upcomingSub:'Transferts futurs non encore réalisés — par ordre chronologique',upcomingEmpty:'Aucun transfert futur en attente.',today:"Aujourd'hui",tomorrow:'Demain',emailPrevSec:'📧 Aperçu du texte envoyé',waPrevLang:'Langue du message (liste)',payIncl:'Inclure le mode de paiement dans le texte',payModeLbl:'Mode de paiement',payOff:'(ne pas afficher)',paySheet:'Paramètre agence (gestion des accès)',payDriver:'Espèces au chauffeur',payRecep:'Espèces à la réception',payCustomOpt:'Personnalisé (texte libre)',payCustomLbl:'Texte personnalisé (toutes langues)',payCustomPh:'Ex. : Paiement sur place…'},
   ES:{loginTitle:'🔐 Portal Agencias',agId:'Identificador',agPass:'Contraseña',loginBtn:'Entrar',resetLink:'Cambiar / Recuperar contraseña',r1Title:'🔑 Recuperar Contraseña',r1Sub:'Introduzca su identificador y email registrado',r1Id:'Identificador',r1Email:'Email registrado en la cuenta',r1Btn:'Enviar Código',back1:'Volver al acceso',r2Title:'📧 Verificar Código',r2Sub:'Código enviado a su email',r2Code:'Código de verificación (6 dígitos)',r2New:'Nueva contraseña (mín. 8 car.)',r2Cf:'Confirmar nueva contraseña',r2Btn:'Cambiar Contraseña',r2Hint:'El código es válido durante 15 minutos',back2:'Pedir nuevo código',errEmpty:'Por favor rellene todos los campos.',errConn:'Error de conexión.',errPwMatch:'Las contraseñas no coinciden.',errPwShort:'Mínimo 8 caracteres.',okPwChanged:'✅ ¡Contraseña cambiada con éxito!',sTotal:'Total',sPend:'Pendientes',sConf:'Confirmadas',sUpcoming:'A Realizar',cardTtl:'Reservas Asignadas',expExcel:'Excel',expPdf:'PDF',refreshTxt:'Actualizar',fStatut:'Estado',fAll:'Todos',fPend:'⏳ Pendiente',fConf:'✅ Confirmada',fCanc:'❌ Cancelada',fReal:'🏁 Realizada',fDs:'Fecha inicio',fDe:'Fecha fin',fDest:'Destino',fDestAll:'Todos',btnFilter:'Filtrar',btnReset:'Borrar',loading:'Cargando…',logout:'⎋ Salir',modalTtl:'Detalles de la Reserva',modalActions:'⚡ Acciones',mPrix:'Precio (€)',mComment:'Comentario (opcional)',btnClose:'Cerrar',btnCancel:'Cancelar',btnConfirm:'Confirmar',btnPrice:'Cambiar Precio',waTtl:'Confirmación WhatsApp → Cliente',waPhone:'WhatsApp cliente',waBtn:'Abrir WhatsApp → Cliente',hotelWaTtl:'Confirmar a Next Level — via WhatsApp',hotelWaDesc:'Envíe este mensaje al hotel para confirmar que su agencia acepta este traslado.',hotelWaBtn:'Confirmar al Hotel via WhatsApp',copyMsg:'Copiar Mensaje',calTtl:'Agregar al Calendario',colRef:'Ref.',colClient:'Cliente',colDate:'Fecha',colHour:'Hora',colRoute:'Ruta',colPax:'Pax',colPrice:'Precio',colStatus:'Estado',colActs:'Acciones',emptyTitle:'No se encontraron reservas',emptySub:'Intente ajustar los filtros.',toastConf:'✅ Confirmada con éxito',toastCanc:'❌ Cancelada',toastExcel:'📊 Excel exportado',toastPdf:'🖨️ PDF impreso',toastWa:'💬 ¡WhatsApp abierto!',toastHotelWa:'🏨 ¡Mensaje de confirmación al hotel abierto!',toastPrice:'💶 Precio actualizado',toastCopy:'📋 ¡Mensaje copiado!',confirmCancel:'Cancelar esta reserva',msgConf:'✅ ¡Reserva confirmada!',msgCanc:'❌ Reserva cancelada.',msgPrice:'💶 ¡Precio actualizado!',pageOf:'de',lblClient:'Cliente',lblEmail:'Email',lblPhone:'Teléfono',lblOta:'Ref. OTA',lblDate:'Fecha / Hora',lblPaxMalas:'Pax / Maletas',lblOrigin:'Salida',lblAddrDep:'Dirección salida',lblDest:'Destino',lblAddrDest:'Dirección destino',lblFlight:'N° Vuelo',lblTransport:'N° Transporte',lblRoom:'Habitación',lblPrice:'Precio',lblStatus:'Estado',lblComments:'Comentarios',tabAll:'Todas las Reservas',tabUpcoming:'Próximas Transferencias',upcomingTitle:'Próximas Transferencias',upcomingSub:'Transferencias futuras no realizadas — en orden cronológico',upcomingEmpty:'No hay transferencias futuras pendientes.',today:'Hoy',tomorrow:'Mañana',emailPrevSec:'📧 Vista previa del texto enviado',waPrevLang:'Idioma del mensaje (lista)',payIncl:'Incluir modo de pago en el texto',payModeLbl:'Modo de pago',payOff:'(no mostrar)',paySheet:'Definición de la agencia (gestión de accesos)',payDriver:'Efectivo al conductor',payRecep:'Efectivo en recepción del hotel',payCustomOpt:'Personalizado (texto libre)',payCustomLbl:'Texto personalizado (todas las lenguas)',payCustomPh:'Ej.: Pago en destino…'}
 };
+
+(function(){
+  const N = {
+    PT:{notifToggle:'Alertas de novas reservas (navegador)',notifTitle:'Nova reserva atribuída',notifBodyRef:'Ref.',notifMany:'novas reservas',notifDenied:'Permissão de notificações negada nas definições do navegador.',notifNoBrowser:'Este navegador não suporta notificações.'},
+    EN:{notifToggle:'New booking alerts (browser)',notifTitle:'New assigned booking',notifBodyRef:'Ref.',notifMany:'new bookings',notifDenied:'Notification permission blocked in browser settings.',notifNoBrowser:'This browser does not support notifications.'},
+    FR:{notifToggle:'Alertes nouvelles réservations (navigateur)',notifTitle:'Nouvelle réservation attribuée',notifBodyRef:'Réf.',notifMany:'nouvelles réservations',notifDenied:'Permission de notification refusée dans le navigateur.',notifNoBrowser:'Ce navigateur ne prend pas en charge les notifications.'},
+    ES:{notifToggle:'Alertas de nuevas reservas (navegador)',notifTitle:'Nueva reserva asignada',notifBodyRef:'Ref.',notifMany:'nuevas reservas',notifDenied:'Permiso de notificaciones bloqueado en el navegador.',notifNoBrowser:'Este navegador no admite notificaciones.'}
+  };
+  Object.keys(N).forEach(function(k){ Object.assign(UI[k], N[k]); });
+})();
 
 // ═══════════════════════════════════════════════════════════════════
 // TEMPLATES WHATSAPP — CLIENT (demande de confirmation au client)
@@ -1320,8 +1333,9 @@ function setLang(lang, zone){
   s('lbl-refresh-txt',T.refreshTxt); s('lbl-f-statut',T.fStatut);
   s('f-all',T.fAll); s('f-pend',T.fPend); s('f-conf',T.fConf); s('f-canc',T.fCanc); s('f-real',T.fReal);
   s('lbl-f-ds',T.fDs); s('lbl-f-de',T.fDe); s('lbl-f-dest',T.fDest); s('f-dest-all',T.fDestAll);
-  s('lbl-btn-filter',T.btnFilter); s('lbl-btn-reset',T.btnReset); s('lbl-loading',T.loading);
+  s('lbl-btn-filter',T.btnFilter); s('lbl-btn-reset',T.btnReset);   s('lbl-loading',T.loading);
   s('lbl-logout',T.logout);
+  s('lbl-notif-toggle',T.notifToggle);
   // Modal
   s('lbl-modal-ttl',T.modalTtl); s('lbl-modal-actions',T.modalActions);
   s('lbl-m-prix',T.mPrix); s('lbl-m-comment',T.mComment);
@@ -1409,6 +1423,7 @@ async function doLogin(){
       showScreen('app-screen');
       updateSessionBar();
       loadReservas();
+      startAgencyReservationPolling();
     } else {
       msgBox('login-err', d.error || t().errEmpty, 'err');
     }
@@ -1420,6 +1435,7 @@ async function doLogin(){
 }
 
 async function doLogout(){
+  stopAgencyReservationPolling();
   try { await api({ action:'deconnexionAgence', agencyId:APP.agencyId, token:APP.token }); } catch(e){}
   clearAgencySessionAll();
   APP.agencyId = APP.agencyNom = APP.token = null;
@@ -1494,12 +1510,133 @@ function updateSessionBar(){
   if(el) el.textContent = `Conectado há ${hours}h${mins < 10 ? '0'+mins : mins}m`;
 }
 
+/* ─── Nouvelles réservations : contrôle périodique (API) + Notification navigateur ─── */
+const NOTIF_POLL_MS = 60000;
+const NOTIF_LS = 'nlp_ag_notif_enabled';
+let _agencyPollTimer = null;
+let _notifBaselineReady = false;
+
+function getNotifEnabled(){
+  try { return localStorage.getItem(NOTIF_LS) === '1'; } catch (e) { return false; }
+}
+function setNotifEnabled(on){
+  try { localStorage.setItem(NOTIF_LS, on ? '1' : '0'); } catch (e) {}
+}
+function syncNotifCheckbox(){
+  const cb = document.getElementById('notif-enable');
+  if (cb) cb.checked = getNotifEnabled();
+}
+function onNotifToggleChange(){
+  const cb = document.getElementById('notif-enable');
+  const want = cb && cb.checked;
+  if (!want) {
+    setNotifEnabled(false);
+    return;
+  }
+  if (typeof Notification === 'undefined') {
+    toast(t().notifNoBrowser, 'error');
+    if (cb) cb.checked = false;
+    setNotifEnabled(false);
+    return;
+  }
+  const perm = Notification.permission;
+  if (perm === 'denied') {
+    toast(t().notifDenied, 'error');
+    if (cb) cb.checked = false;
+    setNotifEnabled(false);
+    return;
+  }
+  if (perm === 'default') {
+    Notification.requestPermission().then(function (p) {
+      if (p !== 'granted') {
+        if (cb) cb.checked = false;
+        setNotifEnabled(false);
+        if (p === 'denied') toast(t().notifDenied, 'error');
+      } else {
+        setNotifEnabled(true);
+      }
+    });
+    return;
+  }
+  setNotifEnabled(true);
+}
+function resetNotifTracking() {
+  APP.notifKnownIds = new Set();
+  _notifBaselineReady = false;
+}
+function stopAgencyReservationPolling() {
+  if (_agencyPollTimer) {
+    clearInterval(_agencyPollTimer);
+    _agencyPollTimer = null;
+  }
+  resetNotifTracking();
+}
+async function fetchAllReservationsUnfiltered() {
+  return api({
+    action: 'getReservationsAgence',
+    agencyId: APP.agencyId,
+    token: APP.token,
+    filtres: { statut: '', dateDebut: '', dateFin: '', destination: '' }
+  });
+}
+async function pollNewReservations() {
+  if (!APP.token || !checkApiConfig()) return;
+  try {
+    const d = await fetchAllReservationsUnfiltered();
+    if (!d.success) {
+      if (d.sessionExpired) doLogout();
+      return;
+    }
+    const list = d.reservations || [];
+    const ids = list.map(function (r) { return r && r.id; }).filter(Boolean);
+    const idSet = new Set(ids);
+    if (!_notifBaselineReady) {
+      APP.notifKnownIds = idSet;
+      _notifBaselineReady = true;
+      return;
+    }
+    const newIds = ids.filter(function (id) { return !APP.notifKnownIds.has(id); });
+    if (!newIds.length) return;
+    newIds.forEach(function (id) { APP.notifKnownIds.add(id); });
+    const T = t();
+    const showBrowser = getNotifEnabled() && typeof Notification !== 'undefined' && Notification.permission === 'granted';
+    if (showBrowser) {
+      if (newIds.length === 1) {
+        const r = list.find(function (x) { return x.id === newIds[0]; });
+        const body = r
+          ? (T.notifBodyRef || 'Ref.') + ' ' + r.id + ' · ' + (r.clientNom || '—') + ' · ' + fmtD(r.dateTransfer)
+          : String(newIds[0]);
+        try {
+          new Notification(T.notifTitle || 'Booking', { body: body, tag: 'nlp-resa-' + newIds[0] });
+        } catch (e) {}
+      } else {
+        try {
+          new Notification(T.notifTitle || 'Booking', { body: String(newIds.length) + ' ' + (T.notifMany || '') });
+        } catch (e) {}
+      }
+    } else {
+      toast('🔔 ' + (newIds.length === 1 ? (T.notifTitle + ' — ' + newIds[0]) : (String(newIds.length) + ' ' + T.notifMany)), 'notif');
+    }
+    loadReservas({ quiet: true });
+  } catch (e) {}
+}
+function startAgencyReservationPolling() {
+  stopAgencyReservationPolling();
+  if (!APP.token) return;
+  pollNewReservations();
+  _agencyPollTimer = setInterval(pollNewReservations, NOTIF_POLL_MS);
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // RÉSERVATIONS
 // ═══════════════════════════════════════════════════════════════════
-async function loadReservas(){
-  document.getElementById('tbl-wrap').innerHTML = `<div class="loader"><div class="loader-ring"></div><p>${t().loading}</p></div>`;
-  document.getElementById('pagination').style.display = 'none';
+async function loadReservas(opts){
+  opts = opts || {};
+  const quiet = !!opts.quiet;
+  if(!quiet){
+    document.getElementById('tbl-wrap').innerHTML = `<div class="loader"><div class="loader-ring"></div><p>${t().loading}</p></div>`;
+    document.getElementById('pagination').style.display = 'none';
+  }
   const filtres = {
     statut:      document.getElementById('f-statut').value,
     dateDebut:   document.getElementById('f-ds').value,
@@ -1515,7 +1652,9 @@ async function loadReservas(){
     });
     if(!d.success){
       if(d.sessionExpired){ doLogout(); return; }
-      document.getElementById('tbl-wrap').innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-title">${d.error}</div></div>`;
+      if(!quiet){
+        document.getElementById('tbl-wrap').innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-title">${d.error}</div></div>`;
+      }
       return;
     }
     APP.reservas = d.reservations || [];
@@ -1536,12 +1675,14 @@ async function loadReservas(){
     renderTable();
     if(APP.curTab === 'upcoming') renderUpcoming();
   } catch(e){
-    document.getElementById('tbl-wrap').innerHTML = `
-      <div class="empty">
-        <div class="empty-icon">🔌</div>
-        <div class="empty-title">${t().errConn}</div>
-        <div class="empty-sub" style="max-width:400px;margin:0 auto;word-break:break-word">${e.message}</div>
-      </div>`;
+    if(!quiet){
+      document.getElementById('tbl-wrap').innerHTML = `
+        <div class="empty">
+          <div class="empty-icon">🔌</div>
+          <div class="empty-title">${t().errConn}</div>
+          <div class="empty-sub" style="max-width:400px;margin:0 auto;word-break:break-word">${e.message}</div>
+        </div>`;
+    }
   }
 }
 
@@ -2075,6 +2216,7 @@ function exportPDF(){
       showScreen('app-screen');
       updateSessionBar();
       loadReservas();
+      startAgencyReservationPolling();
     }
   }
 
@@ -2095,6 +2237,7 @@ function exportPDF(){
   // Português (Portugal) como idioma padrão em todas as áreas
   setLang('PT', 'login');
   setLang('PT', 'app');
+  syncNotifCheckbox();
 })();
 
 // Clavier : navigation modale
@@ -2140,10 +2283,5 @@ document.addEventListener('keydown', e => {
   setAgencyTheme((function(){try{return localStorage.getItem(KEY)==='dark'?'dark':'light';}catch(e){return'light';}})());
 })();
 </script>
-
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js', { scope: './' }).catch(function () {});
-}
-</script></body>
+</body>
 </html>
