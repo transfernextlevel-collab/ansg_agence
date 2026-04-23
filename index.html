@@ -152,8 +152,9 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 
 .main{flex:1;padding:24px;max-width:1400px;margin:0 auto;width:100%}
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
-.stat-card{background:var(--white);border-radius:var(--r-lg);padding:20px;border:1px solid var(--border);box-shadow:var(--shadow);display:flex;align-items:center;gap:14px;transition:var(--ease)}
+.stat-card{background:var(--white);border-radius:var(--r-lg);padding:20px;border:1px solid var(--border);box-shadow:var(--shadow);display:flex;align-items:center;gap:14px;transition:var(--ease);cursor:pointer}
 .stat-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-1px)}
+.stat-card.active-filter{border-color:var(--navy);box-shadow:0 0 0 3px rgba(27,79,114,.15)}
 .stat-icon{width:44px;height:44px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
 .si-b{background:var(--info-bg)}.si-y{background:var(--warn-bg)}.si-g{background:var(--success-bg)}.si-r{background:var(--danger-bg)}.si-p{background:var(--up-bg)}
 .stat-val{font-size:28px;font-weight:700;color:var(--navy);line-height:1;font-family:'Cormorant Garamond',serif}
@@ -402,6 +403,9 @@ html[data-theme="dark"] .field label,
 html[data-theme="dark"] .m-field label,
 html[data-theme="dark"] .info-label{color:#d1dae8;font-weight:700}
 html[data-theme="dark"] .stat-lbl{color:#c5cedd}
+html[data-theme="dark"] .stat-card{border-color:var(--border)}
+html[data-theme="dark"] .stat-card:hover{border-color:rgba(212,181,92,.35)}
+html[data-theme="dark"] .stat-card.active-filter{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.22)}
 html[data-theme="dark"] .tab-btn{color:#c5cedd}
 html[data-theme="dark"] .tab-btn.active{color:var(--gold)}
 html[data-theme="dark"] .page-info,
@@ -915,10 +919,10 @@ html[data-theme="dark"] .header .lang-app .lp.active{
   <div class="main">
     <!-- Stats -->
     <div class="stats-grid fadein">
-      <div class="stat-card"><div class="stat-icon si-b">📋</div><div><div class="stat-val" id="s-total">—</div><div class="stat-lbl" id="lbl-s-total">Total</div></div></div>
-      <div class="stat-card"><div class="stat-icon si-y">⏳</div><div><div class="stat-val" id="s-pend">—</div><div class="stat-lbl" id="lbl-s-pend">Pendentes</div></div></div>
-      <div class="stat-card"><div class="stat-icon si-g">✅</div><div><div class="stat-val" id="s-conf">—</div><div class="stat-lbl" id="lbl-s-conf">Confirmadas</div></div></div>
-      <div class="stat-card"><div class="stat-icon si-p">🗓</div><div><div class="stat-val" id="s-upcoming">—</div><div class="stat-lbl" id="lbl-s-upcoming">A Realizar</div></div></div>
+      <div class="stat-card" onclick="filterByStatCard('all')"><div class="stat-icon si-b">📋</div><div><div class="stat-val" id="s-total">—</div><div class="stat-lbl" id="lbl-s-total">Total</div></div></div>
+      <div class="stat-card" onclick="filterByStatCard('pendente')"><div class="stat-icon si-y">⏳</div><div><div class="stat-val" id="s-pend">—</div><div class="stat-lbl" id="lbl-s-pend">Pendentes</div></div></div>
+      <div class="stat-card" onclick="filterByStatCard('confirmado')"><div class="stat-icon si-g">✅</div><div><div class="stat-val" id="s-conf">—</div><div class="stat-lbl" id="lbl-s-conf">Confirmadas</div></div></div>
+      <div class="stat-card" onclick="filterByStatCard('upcoming')"><div class="stat-icon si-p">🗓</div><div><div class="stat-val" id="s-upcoming">—</div><div class="stat-lbl" id="lbl-s-upcoming">A Realizar</div></div></div>
     </div>
 
     <!-- TAB: Toutes les réservations -->
@@ -1127,7 +1131,9 @@ const APP = {
   curId:null, curIdx:null,
   curWaResa:null,
   resetId:null, curTab:'all',
-  loginTime:null
+  loginTime:null,
+  /** Filtre rapide par carte KPI : all | pendente | confirmado | upcoming | null (ex. cancelado/realizado au menu) */
+  statCardFilter:'all'
 };
 
 /* Session : actualizar página não desconecta ; saída automática após 3 h sem atividade. */
@@ -1354,6 +1360,7 @@ function setLang(lang, zone){
   // Re-render if data loaded
   if(APP.reservas.length > 0){
     renderTable();
+    refreshStatCardFilterUi();
     if(APP.curTab === 'upcoming') renderUpcoming();
     if(APP.curId) {
       const idx = APP.reservas.findIndex(x => x.id === APP.curId);
@@ -1440,6 +1447,7 @@ async function doLogout(){
   clearAgencySessionAll();
   APP.agencyId = APP.agencyNom = APP.token = null;
   APP.methodePaiement = '';
+  APP.statCardFilter = 'all';
   APP.reservas = [];
   document.getElementById('ag-id').value = '';
   document.getElementById('ag-pass').value = '';
@@ -1673,6 +1681,7 @@ async function loadReservas(opts){
     document.getElementById('tc-all').textContent = APP.reservas.length;
     document.getElementById('tc-upcoming').textContent = upcoming.length;
     renderTable();
+    refreshStatCardFilterUi();
     if(APP.curTab === 'upcoming') renderUpcoming();
   } catch(e){
     if(!quiet){
@@ -1686,8 +1695,45 @@ async function loadReservas(opts){
   }
 }
 
-function applyFilters(){ APP.page = 1; loadReservas(); }
+function getTableFilterRows(){
+  if(APP.statCardFilter !== 'upcoming') return APP.reservas;
+  const today = new Date(); today.setHours(0,0,0,0);
+  return APP.reservas.filter(r =>
+    r.statut !== 'realizado' && r.statut !== 'cancelado' &&
+    parseDate(r.dateTransfer) && parseDate(r.dateTransfer) >= today
+  );
+}
+function refreshStatCardFilterUi(){
+  document.querySelectorAll('.stats-grid .stat-card').forEach(c => c.classList.remove('active-filter'));
+  if(APP.statCardFilter == null) return;
+  const map = { all:'s-total', pendente:'s-pend', confirmado:'s-conf', upcoming:'s-upcoming' };
+  const sid = map[APP.statCardFilter];
+  if(!sid) return;
+  const el = document.getElementById(sid);
+  const card = el && el.closest('.stat-card');
+  if(card) card.classList.add('active-filter');
+}
+function filterByStatCard(mode){
+  APP.statCardFilter = mode;
+  const st = document.getElementById('f-statut');
+  if(st){
+    if(mode === 'all' || mode === 'upcoming') st.value = '';
+    else st.value = mode;
+  }
+  APP.page = 1;
+  loadReservas();
+}
+function applyFilters(){
+  const st = document.getElementById('f-statut').value;
+  if(st === '') APP.statCardFilter = 'all';
+  else if(st === 'pendente') APP.statCardFilter = 'pendente';
+  else if(st === 'confirmado') APP.statCardFilter = 'confirmado';
+  else APP.statCardFilter = null;
+  APP.page = 1;
+  loadReservas();
+}
 function resetFilters(){
+  APP.statCardFilter = 'all';
   ['f-statut','f-ds','f-de','f-dest'].forEach(id => {
     const e = document.getElementById(id); if(e) e.value = '';
   });
@@ -1698,7 +1744,7 @@ function resetFilters(){
 // TABLE
 // ═══════════════════════════════════════════════════════════════════
 function renderTable(){
-  const T2 = t(), data = APP.reservas, total = data.length;
+  const T2 = t(), data = getTableFilterRows(), total = data.length;
   if(!total){
     document.getElementById('tbl-wrap').innerHTML = `
       <div class="empty">
@@ -1768,7 +1814,7 @@ function renderTable(){
 }
 
 function goPage(p){
-  const pages = Math.ceil(APP.reservas.length / APP.perPage);
+  const pages = Math.ceil(getTableFilterRows().length / APP.perPage);
   if(p < 1 || p > pages) return;
   APP.page = p; renderTable();
 }
@@ -2103,12 +2149,14 @@ async function quickCancel(id){
 // ═══════════════════════════════════════════════════════════════════
 function exportExcel(){
   const T2 = t();
+  const viewRows = getTableFilterRows();
   if(!APP.reservas.length){ toast(T2.emptyTitle, 'error'); return; }
+  if(!viewRows.length){ toast(T2.emptyTitle, 'error'); return; }
   if(typeof XLSX === 'undefined'){ toast('SheetJS not loaded', 'error'); return; }
   const hdrs = [T2.colRef, T2.lblClient, T2.lblEmail, T2.lblPhone, 'OTA',
     'Data', 'Hora', T2.lblOrigin, 'Morada Partida', T2.lblDest, 'Morada Destino',
     'Pax', 'Malas', T2.lblFlight, T2.lblTransport, T2.lblPrice, T2.colStatus, T2.lblComments];
-  const rows = APP.reservas.map(r => [
+  const rows = viewRows.map(r => [
     r.id, r.clientNom, r.clientEmail, r.telephone, r.numReservaOta,
     fmtD(r.dateTransfer), r.heureTransfer,
     r.pointDepart, r.adresseDepart||'', r.destination, r.adresseDestination||'',
@@ -2148,6 +2196,8 @@ function exportExcel(){
 function exportPDF(){
   const T2 = t();
   if(!APP.reservas.length){ toast(T2.emptyTitle, 'error'); return; }
+  const viewRows = getTableFilterRows();
+  if(!viewRows.length){ toast(T2.emptyTitle, 'error'); return; }
   const today = new Date(); today.setHours(0,0,0,0);
   const upcoming = APP.reservas
     .filter(r => r.statut !== 'realizado' && r.statut !== 'cancelado' &&
@@ -2176,9 +2226,9 @@ function exportPDF(){
   ${upcoming.length ? `<h3>🗓 ${T2.upcomingTitle} (${upcoming.length})</h3>
   <table><thead><tr><th>Ref.</th><th>Cliente</th><th>Data</th><th>Hora</th><th>Partida</th><th>Destino</th><th>Pax</th><th>Preço</th><th>Estado</th></tr></thead>
   <tbody>${rows(upcoming)}</tbody></table>` : ''}
-  <h3>📋 ${T2.cardTtl} (${APP.reservas.length})</h3>
+  <h3>📋 ${T2.cardTtl} (${viewRows.length})</h3>
   <table><thead><tr><th>Ref.</th><th>Cliente</th><th>Data</th><th>Hora</th><th>Partida</th><th>Destino</th><th>Pax</th><th>Preço</th><th>Estado</th></tr></thead>
-  <tbody>${rows(APP.reservas)}</tbody></table>
+  <tbody>${rows(viewRows)}</tbody></table>
   <div class="footer">Next Level Premium Hotels · Agência: ${APP.agencyId} · Gerado em ${new Date().toLocaleString('pt-PT')}</div>
   </body></html>`;
 
